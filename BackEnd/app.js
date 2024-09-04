@@ -1,6 +1,7 @@
 const express = require('express');
 const connectDB = require("./config/db.js");
 const dotenv = require("dotenv").config();
+const bookRoutes = require("./routes/books")
 
 // connexion à la base de donnée
 connectDB();
@@ -27,4 +28,5 @@ app.use((req, res, next) => {
   console.log('Réponse envoyée avec succès !');
 });
 
+app.use("/api/books", bookRoutes);
 module.exports = app;
