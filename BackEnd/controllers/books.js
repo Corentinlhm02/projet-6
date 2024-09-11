@@ -1,38 +1,60 @@
-const UserModel = require("../models/user.model")
-const BookModel = require("../models/book.model")
+const BookModel = require("../models/book.model");
 
-module.exports.getPosts = async (req, res) => {
-    const posts = await BookModel.find();
-    res.status(200).json(posts);
-  };
-  
-  module.exports.setPosts = async (req, res) => {
-    if (!req.body.message) {
-      res.status(400).json({ title: "Merci d'ajouter un titre" });
-    }
-  
-    const post = await BookModel.create({
-      title: req.body.title,
-      author: req.body.author,
+exports.createBook = (req, res, next) => {
+  console.log("--------------------------------------------------------------------- :", req); 
+  delete req.body._id;
+
+  const book = new BookModel({
+    ...req.body
+  });
+
+  // Sauvegarder le livre dans la base de données
+  book.save()
+    .then(() => res.status(201).json({ message: 'Livre ajouté avec succès !' }))
+    .catch(error => {
+      console.error("Erreur lors de la sauvegarde du livre :", error);
+      res.status(400).json({ error });
     });
-    res.status(200).json(post);
-  };
+};
 
-const Book = require('../models/book.model');
 
-exports.addReview = (req, res) => {
-    const { userId, reviewText } = req.body;
-    const bookId = req.params.bookId;
+// Fonction pour obtenir tous les livres
+module.exports.getPosts = async (req, res) => {
+  try {
+    const books = await BookModel.find();
+    res.status(200).json(books);
+  } catch (error) {
+    res.status(400).json({ error });
+  }
+};
 
-    Book.findById(bookId)
-        .then(book => {
-            if (!book) {
-                return res.status(404).json({ error: 'Livre non trouvé !' });
-            }
-            // Ajout de l'avis dans le tableau des reviews
-            book.reviews.push({ userId, reviewText });
-            return book.save();
-        })
-        .then(() => res.status(201).json({ message: 'Avis ajouté avec succès !' }))
-        .catch(error => res.status(500).json({ error: error.message }));
+// // Fonction pour ajouter un livre
+// module.exports.setPosts = async (req, res) => {
+//   // Validation du titre et de l'auteur
+//   if (!req.body.title || !req.body.author) {
+//     return res.status(400).json({ message: "Merci de fournir un titre et un auteur" });
+//   }
+
+//   try {
+//     // Création d'un nouveau livre
+//     const book = await BookModel.create({
+//       title: req.body.title,
+//       author: req.body.author,
+//       description: req.body.description
+//     });
+
+//     res.status(201).json(book);
+//   } catch (error) {
+//     res.status(400).json({ error });
+//   }
+// };
+
+// Supprimer un livre
+exports.deleteBook = async (req, res) => {
+  try {
+    await BookModel.findByIdAndDelete(req.params.id);
+    res.status(200).json({ message: 'Livre supprimé avec succès' });
+  } catch (error) {
+    res.status(400).json({ error });
+  }
 };

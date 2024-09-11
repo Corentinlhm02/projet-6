@@ -7,9 +7,9 @@ const authController = require("../controllers/auth");
 router.post('/signup', authController.signup);
 
 router.post('/login', (req, res) => {
-    console.log('Route /login atteinte');
     authController.login(req, res);
 });
+
 
 
 
