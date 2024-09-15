@@ -1,4 +1,5 @@
 const BookModel = require("../models/book.model");
+const fs = require('fs');
 
 exports.createBook = (req, res, next) => {
   try {
@@ -80,7 +81,47 @@ exports.rateBook = async (req, res) => {
   }
 };
 
+// modifier un livre
+exports.editBook = async (req, res) => {
+  try {
+    const bookId = req.params.id;
+    const bookObject = req.file ? 
+      {
+        ...JSON.parse(req.body.book),
+        imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`,
+      } 
+      : { ...req.body };
 
+    // On supprime userId du body pour empêcher la modification de celui-ci
+    delete bookObject._userId;
+
+    // Récupération du livre à modifier
+    const book = await BookModel.findOne({ _id: bookId });
+    if (!book) {
+      return res.status(404).json({ message: "Livre non trouvé" });
+    }
+
+    // Vérification que l'utilisateur est bien le propriétaire du livre
+    if (book.userId !== req.auth.userId) {
+      return res.status(403).json({ message: "Non autorisé à modifier ce livre" });
+    }
+
+    // Si un nouveau fichier image est envoyé, supprimer l'ancienne image
+    if (req.file) {
+      const filename = book.imageUrl.split('/images/')[1];
+      fs.unlink(`images/${filename}`, (err) => {
+        if (err) console.error('Erreur lors de la suppression de l\'ancienne image :', err);
+      });
+    }
+
+    // Mise à jour du livre avec les nouvelles données
+    await BookModel.updateOne({ _id: bookId }, { ...bookObject, _id: bookId });
+    res.status(200).json({ message: 'Livre modifié avec succès !' });
+  } catch (error) {
+    console.error('Erreur lors de la modification du livre :', error);
+    res.status(400).json({ error: error.message });
+  }
+};
 
 // Supprimer un livre
 exports.deleteBook = async (req, res) => {
@@ -89,5 +130,17 @@ exports.deleteBook = async (req, res) => {
     res.status(200).json({ message: 'Livre supprimé avec succès' });
   } catch (error) {
     res.status(400).json({ error });
+  }
+};
+
+exports.getBestRatedBooks = async (req, res) => {
+  try {
+    // Chercher les livres et les trier par averageRating décroissant, puis limiter le résultat à 3 livres
+    const bestRatedBooks = await BookModel.find().sort({ averageRating: -1 }).limit(3);
+    
+    res.status(200).json(bestRatedBooks);
+  } catch (error) {
+    console.error('Erreur lors de la récupération des meilleurs livres :', error);
+    res.status(500).json({ error: 'Une erreur est survenue lors de la récupération des meilleurs livres.' });
   }
 };
