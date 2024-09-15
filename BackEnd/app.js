@@ -2,6 +2,7 @@ const express = require('express');
 const connectDB = require("./config/db.js");
 const dotenv = require("dotenv").config();
 const cors = require('cors');
+const path = require('path');
 const bookRoutes = require("./routes/books");
 const authRoutes = require('./routes/auth');
 const Book = require("./models/book.model.js");
@@ -27,6 +28,7 @@ app.use((req, res, next) => {
 // Routes
 app.use("/api/books", bookRoutes);
 app.use("/api/auth", authRoutes); 
+app.use('/images', express.static(path.join(__dirname, 'images')));
 
 // Middleware pour gérer les erreurs 404
 app.use((req, res, next) => {

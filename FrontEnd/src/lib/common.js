@@ -131,8 +131,6 @@ export async function addBook(data) {
   bodyFormData.append('book', JSON.stringify(book));
   bodyFormData.append('image', data.file[0]);
 
-  console.log(bodyFormData);
-
   try {
     return await axios({
       method: 'post',
