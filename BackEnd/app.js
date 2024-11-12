@@ -7,7 +7,7 @@ const bookRoutes = require("./routes/books");
 const authRoutes = require('./routes/auth');
 const Book = require("./models/book.model.js");
 
-// Initialisation de l'application Express (cette ligne doit être avant l'utilisation d'app)
+// Initialisation de l'application Express
 const app = express();
 
 // Connexion à la base de données

@@ -1,6 +1,7 @@
 const express = require('express');
 const multer = require("../middleware/multer-config");
 const auth = require('../middleware/auth');
+const sharp = require("../middleware/sharp-config");
 
 const {
     createBook,
@@ -24,7 +25,7 @@ router.get('/', getPosts);
 router.get('/:id', getBookById);
 
 // Route pour créer un nouveau livre
-router.post('/', auth,multer,createBook);
+router.post('/', auth,multer,sharp,createBook);
 
 // Route pour supprimer un livre
 router.delete('/:id', auth,deleteBook);
@@ -33,7 +34,7 @@ router.delete('/:id', auth,deleteBook);
 router.post('/:id/rating', auth, rateBook);
 
 // Route pour modifier un livre
-router.put("/:id", auth, multer, editBook);
+router.put("/:id", auth, multer, sharp, editBook);
 
 
 

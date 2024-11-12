@@ -62,9 +62,11 @@ exports.rateBook = async (req, res) => {
     if (existingRating) {
       // Si l'utilisateur a déjà noté, mettre à jour la note
       existingRating.grade = rating;
+      // return res.status(400).json({ message: 'Livre non trouvé' });
     } else {
+      console.log({ userId, grade: req.body.rating });
       // Sinon, ajouter la nouvelle note
-      book.ratings.push({ userId, grade: rating });
+      book.ratings.push({ userId, grade: req.body.rating });
     }
 
     // Recalculer la moyenne des notes
@@ -73,9 +75,13 @@ exports.rateBook = async (req, res) => {
     book.averageRating = sumRatings / totalRatings;
 
     // Sauvegarder le livre avec la nouvelle note et la moyenne
-    await book.save();
-
-    res.status(200).json({ message: 'Note ajoutée avec succès', book });
+   await book.save()
+        .then(() => {
+          console.log(book);
+          console.log(req.params.id);
+          res.status(201).json(book);
+        })
+        .catch((error) => res.status(500).json({ error }));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -92,7 +98,7 @@ exports.editBook = async (req, res) => {
       } 
       : { ...req.body };
 
-    // On supprime userId du body pour empêcher la modification de celui-ci
+    // Supprime userId du body pour empêcher la modification de celui-ci
     delete bookObject._userId;
 
     // Récupération du livre à modifier
