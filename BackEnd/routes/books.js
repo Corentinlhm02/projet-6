@@ -34,7 +34,7 @@ router.delete('/:id', auth,deleteBook);
 router.post('/:id/rating', auth, rateBook);
 
 // Route pour modifier un livre
-router.put("/:id", auth, multer, sharp, editBook);
+router.put("/:id", auth, multer,sharp, editBook);
 
 
 

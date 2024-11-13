@@ -7,12 +7,13 @@ exports.createBook = (req, res, next) => {
     delete bookObject._id;
     delete bookObject._userId;
 
+    const newFileName = req.file.filename.split(".")[0]+ ".webp";
     const book = new BookModel({
       ...bookObject,
       userId: req.auth.userId,
-      imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
+      imageUrl: `${req.protocol}://${req.get('host')}/images/${newFileName}`
     });
-
+    
     book.save()
       .then(() => res.status(201).json({ message: 'Livre enregistré avec succès !' }))
       .catch(error => {
@@ -91,10 +92,11 @@ exports.rateBook = async (req, res) => {
 exports.editBook = async (req, res) => {
   try {
     const bookId = req.params.id;
+    const newFileName = req.file.filename.split(".")[0]+ ".webp";
     const bookObject = req.file ? 
       {
         ...JSON.parse(req.body.book),
-        imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`,
+        imageUrl: `${req.protocol}://${req.get('host')}/images/${newFileName}`,
       } 
       : { ...req.body };
 

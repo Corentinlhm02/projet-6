@@ -1,44 +1,54 @@
-const sharp = require("sharp"); // Librairie pour redimensionner et optimiser les images
-const fs = require("fs");       // Module pour gérer les opérations sur les fichiers
-const path = require("path");    // Module pour manipuler les chemins de fichiers
+const sharp = require("sharp");
+const fs = require("fs");
+const path = require("path");
+
 
 const processImage = (req, res, next) => {
-	if (req.file) { // Vérifie si un fichier a bien été envoyé
-		// Remplace l'extension du fichier par .webp
+	if (req.file) {
+		const originalImagePath = req.file.path; // Sauvegarde du chemin de l'ancienne image
+		
+
 		const webpFilename = req.file.filename.replace(/\.[^.]+$/, ".webp");
-		// Détermine le chemin pour sauvegarder le fichier converti
 		const webpImagePath = path.join("images", webpFilename);
 
-		const newWidth = 400;    // Largeur cible de l'image
-		const newHeight = 600;   // Hauteur cible de l'image
+		const newWidth = 400;
+		const newHeight = 600;
+		
 
-		// Redimensionne et convertit l'image en WebP
+	// 	// Traitement de l'image avec sharp
 		sharp(req.file.path)
 			.resize(newWidth, newHeight)
-			.webp({ quality: 80 }) // Définit la qualité de l'image convertie
-			.toFile(webpImagePath, (err, info) => { // Enregistre l'image convertie
-				if (err) { // Gère les erreurs de conversion
-					console.error("Erreur lors du traitement de l'image");
+			.webp({ quality: 80 })
+			.toFile(webpImagePath, (err, info) => {
+				if (err) {
+					console.error("Erreur lors du traitement de l'image", err);
 					return res.status(500).json({
 						error: "Erreur lors du traitement de l'image",
 					});
 				}
 
-				// Supprime l'image d'origine après la conversion
-				fs.unlink(req.file.path, (err) => {
+				// Supprimer l'ancienne image en utilisant le chemin sauvegardé
+				fs.unlink(originalImagePath, (err) => {
 					if (err) {
-						console.error("Erreur lors de la suppression de l'image");
+						console.error("Erreur lors de la suppression de l'ancienne image:", err);
 					} else {
-						console.log("Ancienne image supprimée avec succès !");
+						console.log("Ancienne image supprimée avec succès.");
 					}
 				});
+				// Mettre à jour le fichier avec le nom WebP
+				req.file.filename = webpFilename;
+				req.file.path = webpImagePath; // Mettre à jour le chemin du fichier
 
-				req.file.filename = webpFilename; // Met à jour le nom du fichier dans la requête
-				next(); // Passe au middleware suivant
+				console.log("Traitement réussi, suppression de l'ancienne image...");
+				
+				// Appeler le prochain middleware ou la route
 			});
+			sharp.cache(false);		
+			next();						
 	} else {
-		next(); // Si aucun fichier, passe simplement au middleware suivant
+		// Si aucun fichier n'est envoyé, on passe au prochain middleware
+		next();
 	}
 };
 
-module.exports = processImage; // Exporte la fonction pour l'utiliser dans d'autres fichiers
+module.exports = processImage;
