@@ -1,5 +1,6 @@
 const BookModel = require("../models/book.model");
 const fs = require('fs');
+const path = require('path');
 
 exports.createBook = (req, res, next) => {
   try {
@@ -92,18 +93,8 @@ exports.rateBook = async (req, res) => {
 exports.editBook = async (req, res) => {
   try {
     const bookId = req.params.id;
-    const newFileName = req.file.filename.split(".")[0]+ ".webp";
-    const bookObject = req.file ? 
-      {
-        ...JSON.parse(req.body.book),
-        imageUrl: `${req.protocol}://${req.get('host')}/images/${newFileName}`,
-      } 
-      : { ...req.body };
 
-    // Supprime userId du body pour empêcher la modification de celui-ci
-    delete bookObject._userId;
-
-    // Récupération du livre à modifier
+    // Récupération du livre existant pour accéder aux données actuelles
     const book = await BookModel.findOne({ _id: bookId });
     if (!book) {
       return res.status(404).json({ message: "Livre non trouvé" });
@@ -114,29 +105,64 @@ exports.editBook = async (req, res) => {
       return res.status(403).json({ message: "Non autorisé à modifier ce livre" });
     }
 
+    // Préparer l'objet bookObject : vérifier si req.file et req.body.book sont définis
+    const bookObject = req.file
+      ? {
+          ...JSON.parse(req.body.book || "{}"), // Définit un objet vide par défaut si req.body.book est indéfini
+          imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename.split(".")[0]}.webp`,
+        }
+      : { ...req.body }; // Utiliser req.body directement si aucune image n'est envoyée
+
     // Si un nouveau fichier image est envoyé, supprimer l'ancienne image
     if (req.file) {
       const filename = book.imageUrl.split('/images/')[1];
       fs.unlink(`images/${filename}`, (err) => {
-        if (err) console.error('Erreur lors de la suppression de l\'ancienne image :', err);
+        if (err) {
+          console.error("Erreur lors de la suppression de l'ancienne image :", err);
+        }
       });
     }
 
-    // Mise à jour du livre avec les nouvelles données
+    // Mise à jour du livre avec les nouvelles données, en conservant l'URL de l'image si aucune nouvelle image n'est envoyée
     await BookModel.updateOne({ _id: bookId }, { ...bookObject, _id: bookId });
-    res.status(200).json({ message: 'Livre modifié avec succès !' });
+    res.status(200).json({ message: "Livre modifié avec succès !" });
   } catch (error) {
-    console.error('Erreur lors de la modification du livre :', error);
+    console.error("Erreur lors de la modification du livre :", error);
     res.status(400).json({ error: error.message });
   }
 };
 
-// Supprimer un livre
+
+
+// supprimer un livre
+
 exports.deleteBook = async (req, res) => {
   try {
+    // Trouver le livre pour récupérer l'image associée
+    const book = await BookModel.findById(req.params.id);
+    if (!book) {
+      return res.status(404).json({ message: "Livre non trouvé" });
+    }
+
+    // Récupérer le nom de l'image depuis l'URL
+    const filename = book.imageUrl.split('/images/')[1];
+    const imagePath = path.join(__dirname, '..', 'images', filename);
+
+    // Supprimer le livre de la base de données
     await BookModel.findByIdAndDelete(req.params.id);
-    res.status(200).json({ message: 'Livre supprimé avec succès' });
+
+    // Supprimer l'image associée
+    fs.unlink(imagePath, (err) => {
+      if (err) {
+        console.error("Erreur lors de la suppression de l'image:", err);
+      } else {
+        console.log("Image supprimée avec succès.");
+      }
+    });
+
+    res.status(200).json({ message: 'Livre et image supprimés avec succès' });
   } catch (error) {
+    console.error("Erreur lors de la suppression du livre :", error);
     res.status(400).json({ error });
   }
 };
